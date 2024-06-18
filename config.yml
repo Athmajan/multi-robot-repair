@@ -86,11 +86,20 @@ node:
 
 
 markov_chain:
-  damages: [0.01, 0.02, 0.03, 0.05]
-
-
-  node_count: 32
-
-
-markov_chain:
   damages : [0.01,0.02,0.03,0.05]
+
+
+node_count: 32
+
+
+  
+
+
+icons:
+  0: 'icons/damage_level_0.png'
+  1: 'icons/damage_level_1.png'
+  2: 'icons/damage_level_2.png'
+  3: 'icons/damage_level_3.png'
+  4: 'icons/damage_level_4.png'
+
+simu_n : 200

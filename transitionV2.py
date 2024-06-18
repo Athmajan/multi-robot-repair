@@ -30,40 +30,30 @@ def initialize_damage_levels(num_nodes):
         initial_damage_levels.append(initial_damage_level)
     return initial_damage_levels
 
-# Function to simulate Markov chain process and collect results
-def simulate_markov_chain(prevDamageLevels, steps):
-    results = []
-    current_damage_levels = prevDamageLevels.copy()
-    results.append(current_damage_levels)
-    
-    for _ in range(steps):
-        new_damage_levels = []
-        for i in range(num_nodes):
-            current_state = current_damage_levels[i]
-            # Transition to next state based on damageTransition matrix
-            rand_prob = random.random()
-            cumulative_prob = 0
-            for j in range(len(damageTransition[current_state])):
-                cumulative_prob += damageTransition[current_state][j]
-                if rand_prob < cumulative_prob:
-                    new_damage_level = j
-                    break
-            new_damage_levels.append(new_damage_level)
-        current_damage_levels = new_damage_levels
-        results.append(current_damage_levels)
-    
-    return results
-
 # Initialize damage levels for all nodes
 initial_damage_levels = initialize_damage_levels(num_nodes)
 
 # Number of simulation steps
 num_steps = 200
 
-# Simulate Markov chain process
-simulation_results = simulate_markov_chain(initial_damage_levels, num_steps)
-
-# Display results
-for step, damage_levels in enumerate(simulation_results):
-    print(f"Step {step}: {damage_levels}")
+# Main simulation loop
+current_damage_levels = initial_damage_levels.copy()
+for step in range(num_steps + 1):
+    print(f"Step {step}: {current_damage_levels}")
     
+    # Simulate damage propagation for the next step
+    new_damage_levels = []
+    for i in range(num_nodes):
+        current_state = current_damage_levels[i]
+        # Transition to next state based on damageTransition matrix
+        rand_prob = random.random()
+        cumulative_prob = 0
+        for j in range(len(damageTransition[current_state])):
+            cumulative_prob += damageTransition[current_state][j]
+            if rand_prob < cumulative_prob:
+                new_damage_level = j
+                break
+        new_damage_levels.append(new_damage_level)
+    
+    # Update current damage levels
+    current_damage_levels = new_damage_levels

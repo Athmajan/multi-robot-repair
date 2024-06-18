@@ -1,5 +1,7 @@
+import os
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import random
 import yaml
 import numpy as np
@@ -59,31 +61,116 @@ def visualize_graph(nodes):
     # Display the graph
     plt.show()
 
-config = load_config('config.yml')
-edges = config["node"]["edges"]
-coordinates = config["node"]["coordinates"]
 
-nodeCount = len(coordinates)
+def initGraphNetwork(config):
+        
+    #config = load_config('config.yml')
+    edges = config["node"]["edges"]
+    coordinates = config["node"]["coordinates"]
 
-damageProbs = config["markov_chain"]["damages"]
-damagelevelCount = len(damageProbs)
-[d_0, d_1, d_2, d_3]  = damageProbs
+    icon0 = config["icons"][0]
+    icon1 = config["icons"][1]
+    icon2 = config["icons"][2]
+    icon3 = config["icons"][3]
+    icon4 = config["icons"][4]
 
-damageTransition = [[(1-d_0), d_0, 0 , 0, 0],
-                    [0, (1-d_1), d_1 , 0, 0],
-                    [0, 0, (1-d_2) , d_2, 0],
-                    [0, 0, 0 , (1-d_3),d_3],
-                    [0, 0, 0 , 0, 1]]
+    nodeCount = len(coordinates)
+    damageProbs = config["markov_chain"]["damages"]
+    [d_0, d_1, d_2, d_3] = damageProbs
+
+    # Construct damageTransition matrix
+    damageTransition = [
+        [(1 - d_0), d_0, 0, 0, 0],
+        [0, (1 - d_1), d_1, 0, 0],
+        [0, 0, (1 - d_2), d_2, 0],
+        [0, 0, 0, (1 - d_3), d_3],
+        [0, 0, 0, 0, 1]
+    ]
+
+    # Create nodes
+    nodes = [Node(node_id=i+1, coordinates=coordinates[i+1], probability_distribution=damageTransition) for i in range(nodeCount)]
+
+    # Add neighbors to nodes
+    node_dict = {node.node_id: node for node in nodes}
+    for edge in edges:
+        node_dict[edge[0]].add_neighbor(node_dict[edge[1]])
+        node_dict[edge[1]].add_neighbor(node_dict[edge[0]])
+
+    return nodes
+
+def initialize_damage_levels(num_nodes):
+    initial_damage_levels = []
+    for _ in range(num_nodes):
+        # Randomly choose an initial damage level based on probabilities in the first row of damageTransition
+        initial_damage_level = 0  # Starting with state 0
+        rand_prob = random.random()
+        cumulative_prob = 0
+        for j in range(len(damageTransition[initial_damage_level])):
+            cumulative_prob += damageTransition[initial_damage_level][j]
+            if rand_prob < cumulative_prob:
+                initial_damage_level = j
+                break
+        initial_damage_levels.append(initial_damage_level)
+    return initial_damage_levels
+
+def nextDamageLevel(current_damage_levels):
+    # Simulate damage propagation for the next step
+    new_damage_levels = []
+    for i in range(nodesN):
+        current_state = current_damage_levels[i]
+        # Transition to next state based on damageTransition matrix
+        rand_prob = random.random()
+        cumulative_prob = 0
+        for j in range(len(damageTransition[current_state])):
+            cumulative_prob += damageTransition[current_state][j]
+            if rand_prob < cumulative_prob:
+                new_damage_level = j
+                break
+        new_damage_levels.append(new_damage_level)
+    
+    # Update current damage levels
+    current_damage_levels = new_damage_levels
+    
+    return current_damage_levels
 
 
-# Create nodes
-nodes = [Node(node_id=i+1, coordinates=coordinates[i+1], probability_distribution=damageTransition) for i in range(nodeCount)]
+if __name__ == "__main__":
+    #seed_value = 30 
+    
+    # Initiate Graph Network
+    config  = load_config('config.yml')
+    damageProbs = config["markov_chain"]["damages"]
+    nodesN = len(config["node"]["coordinates"])
+    steps = config["simu_n"]
+    
+    [d_0, d_1, d_2, d_3] = damageProbs
 
-# Add neighbors to nodes
-node_dict = {node.node_id: node for node in nodes}
-for edge in edges:
-    node_dict[edge[0]].add_neighbor(node_dict[edge[1]])
-    node_dict[edge[1]].add_neighbor(node_dict[edge[0]])
+    # Construct damageTransition matrix
+    damageTransition = [
+        [(1 - d_0), d_0, 0, 0, 0],
+        [0, (1 - d_1), d_1, 0, 0],
+        [0, 0, (1 - d_2), d_2, 0],
+        [0, 0, 0, (1 - d_3), d_3],
+        [0, 0, 0, 0, 1]
+    ]
+    
 
-# Visualize the graph
-visualize_graph(nodes)
+    nodes = initGraphNetwork(config)
+
+
+    #initialize random damages
+    initDamageLevels = initialize_damage_levels(nodesN)
+
+    
+
+    current_damage_levels = initDamageLevels.copy()
+    for step in range(steps):
+       current_damage_levels = nextDamageLevel(current_damage_levels)
+       print(f"Step {step}: {current_damage_levels}")
+       
+        #visualize_graph(nodes)
+
+       
+
+
+
