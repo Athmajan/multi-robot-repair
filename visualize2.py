@@ -7,7 +7,7 @@ import yaml
 import numpy as np
 
 class Node:
-    def __init__(self, node_id, coordinates, neighbors=None, probability_distribution=None,maxDamageLevel=4):
+    def __init__(self, node_id, coordinates, neighbors=None, probability_distribution=None,maxDamageLevel=4,iniDamageLevel=None):
         self.node_id = node_id
         self.coordinates = coordinates
         self.neighbors = neighbors if neighbors is not None else []
@@ -16,9 +16,31 @@ class Node:
         self.damageDistribution = probability_distribution \
             if probability_distribution is not None \
             else np.zeros([self.damageLevels,self.damageLevels])
+        
+        self.damage_level = iniDamageLevel if iniDamageLevel is not None else 0
 
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)
+
+    def propagate_damage(self):
+        self.damage_level = self.markovChainPropagate(self.damageDistribution, self.damage_level)
+
+
+    @staticmethod
+    def markovChainPropagate(damageTransition, prevDamageLevel):
+        '''
+        Markov Chain Propagation for a node
+        given the damage transition matrix and the previous damage level
+        '''
+        damageLevel = prevDamageLevel
+        rand_prob = random.random()
+        cumulative_prob = 0
+        for j in range(len(damageTransition[damageLevel])):
+            cumulative_prob += damageTransition[damageLevel][j]
+            if rand_prob < cumulative_prob:
+                damageLevel = j
+                break
+        return damageLevel
 
     def __repr__(self):
         return f"Node({self.node_id})"
@@ -50,7 +72,8 @@ def visualize_graph(nodes):
 
     # Create labels with node ID
     # Modify node_labels to use the keys from the coordinates dictionary
-    node_labels = {node.node_id: str(node.node_id) for node in nodes}
+    #node_labels = {node.node_id: str(node.node_id) for node in nodes}
+    node_labels = {node.node_id: f"{node.node_id}_{node.damage_level}" for node in nodes}
 
     # Draw the node IDs inside the nodes
     nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12, font_color='black')
@@ -98,40 +121,8 @@ def initGraphNetwork(config):
 
     return nodes
 
-def initialize_damage_levels(num_nodes):
-    initial_damage_levels = []
-    for _ in range(num_nodes):
-        # Randomly choose an initial damage level based on probabilities in the first row of damageTransition
-        initial_damage_level = 0  # Starting with state 0
-        rand_prob = random.random()
-        cumulative_prob = 0
-        for j in range(len(damageTransition[initial_damage_level])):
-            cumulative_prob += damageTransition[initial_damage_level][j]
-            if rand_prob < cumulative_prob:
-                initial_damage_level = j
-                break
-        initial_damage_levels.append(initial_damage_level)
-    return initial_damage_levels
 
-def nextDamageLevel(current_damage_levels):
-    # Simulate damage propagation for the next step
-    new_damage_levels = []
-    for i in range(nodesN):
-        current_state = current_damage_levels[i]
-        # Transition to next state based on damageTransition matrix
-        rand_prob = random.random()
-        cumulative_prob = 0
-        for j in range(len(damageTransition[current_state])):
-            cumulative_prob += damageTransition[current_state][j]
-            if rand_prob < cumulative_prob:
-                new_damage_level = j
-                break
-        new_damage_levels.append(new_damage_level)
-    
-    # Update current damage levels
-    current_damage_levels = new_damage_levels
-    
-    return current_damage_levels
+
 
 
 if __name__ == "__main__":
@@ -156,21 +147,31 @@ if __name__ == "__main__":
     
 
     nodes = initGraphNetwork(config)
+    visualize_graph(nodes)
 
 
-    #initialize random damages
-    initDamageLevels = initialize_damage_levels(nodesN)
-
-    
-
-    current_damage_levels = initDamageLevels.copy()
-    for step in range(steps):
-       current_damage_levels = nextDamageLevel(current_damage_levels)
-       print(f"Step {step}: {current_damage_levels}")
-       
-        #visualize_graph(nodes)
-
-       
 
 
+
+
+
+# config  = load_config('config.yml')
+# [d_0, d_1, d_2, d_3] = config["markov_chain"]["damages"]
+# damage_transition_matrix = [
+#         [(1 - d_0), d_0, 0, 0, 0],
+#         [0, (1 - d_1), d_1, 0, 0],
+#         [0, 0, (1 - d_2), d_2, 0],
+#         [0, 0, 0, (1 - d_3), d_3],
+#         [0, 0, 0, 0, 1]
+#     ]
+# node = Node(node_id=1, coordinates=(0, 0), probability_distribution=damage_transition_matrix)
+
+# # Display the initial state of the node
+# print(f"Initial state: {node}")
+
+# # Propagate damage and display the updated state multiple times
+# for i in range(200):
+#     node.propagate_damage()
+#     print(f"Updated state: {node}")
+#     print(f"After propagation {i+1}: Damage Level = {node.damage_level}")
 
